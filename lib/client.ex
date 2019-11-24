@@ -23,4 +23,28 @@ defmodule Clients do
 
     {:noreply, state}
   end
+
+  def handle_call({:subscribe, subscribe_to_ids}, from, state) do
+    {:ok, server_pid} = Map.fetch(state,:server_id)
+    {:ok, self_id} = Map.fetch(state,:id)
+    Enum.map(subscribe_to_ids, fn id ->
+      GenServer.call(server_pid,{:subscribe_to_user, id, self_id})
+    end)
+    {:reply, from, state}
+  end
+
+  def handle_call({:get_my_followers}, _from, state) do
+    {:ok, server_pid} = Map.fetch(state,:server_id)
+    {:ok, self_id} = Map.fetch(state,:id)
+    existing_users_following = GenServer.call(server_pid, {:get_my_followers, self_id})
+    {:reply, existing_users_following, state}
+  end
+
+  def handle_call({:get_my_subscribeto}, _from, state) do
+    {:ok, server_pid} = Map.fetch(state,:server_id)
+    {:ok, self_id} = Map.fetch(state,:id)
+    existing_users_following  = GenServer.call(server_pid, {:get_my_subscribeto, self_id})
+    {:reply, existing_users_following, state}
+  end
+
 end
