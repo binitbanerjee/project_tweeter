@@ -16,16 +16,6 @@ defmodule Clients do
     {:ok, state}
   end
 
-  def handle_cast({:register, server_id, user_id}, _state) do
-    state = %{
-      server_id: server_id,
-      id: Enum.join(["@", user_id]),
-      news_feed: []
-    }
-
-    {:noreply, state}
-  end
-
   def handle_call({:subscribe, subscribe_to_ids}, from, state) do
     {:ok, server_pid} = Map.fetch(state,:server_id)
     {:ok, self_id} = Map.fetch(state,:id)
@@ -49,15 +39,32 @@ defmodule Clients do
     {:reply, existing_users_following, state}
   end
 
+  def handle_call({:log_in}, from, state) do
+    {:ok, server_pid} = Map.fetch(state,:server_id)
+    {:ok, self_id} = Map.fetch(state,:id)
+    GenServer.call(server_pid, {:log_in, self_id})
+    {:reply, from, state}
+  end
+
+  def handle_call({:log_off}, from, state) do
+    IO.puts("may be")
+    {:ok, server_pid} = Map.fetch(state,:server_id)
+    {:ok, self_id} = Map.fetch(state,:id)
+    GenServer.call(server_pid, {:log_off, self_id})
+
+    {:reply, from, state}
+  end
+
   def handle_cast({:register, server_id, user_id}, _state) do
     state = %{
       server_id: server_id,
       id: Enum.join(["@", user_id]),
       news_feed: []
     }
-
     {:noreply, state}
   end
+
+
 
   def handle_cast({:tweet_post, tweet_msg, hashtag, user_tag}, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
@@ -116,11 +123,11 @@ defmodule Clients do
     {:ok, username} =Map.fetch(state, :id)
     tweet_list = GenServer.call(server_pid,{:query_reverse_Entry, username})
     tweet_list =
-    if tweet_list == nil do
-      []
-    else
-      tweet_list
-    end
+      if tweet_list == nil do
+        []
+      else
+        tweet_list
+      end
     {:reply, from, state}
   end
 

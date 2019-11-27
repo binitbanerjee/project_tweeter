@@ -54,4 +54,24 @@ defmodule ClientTest do
     assert ss == [n2,n1] or ss == [n1,n2]
   end
 
+  test "test to check if user is logged in and logged off successfully" do
+    {server_pid, clients} = init(10)
+    assign_subscribers(clients, server_pid)
+    {target_user, target_pid} = Enum.at(clients,2)
+
+    #check if by default user is logged in.
+    {_, user_state_as_per_server} = GenServer.call(server_pid,{:get_user_status,target_user})
+    assert user_state_as_per_server == 1
+
+    #check if user is looged off successfully
+    GenServer.call(target_pid,{:log_off})
+    {_,user_state_as_per_server} = GenServer.call(server_pid,{:get_user_status,target_user})
+    assert user_state_as_per_server == 0
+
+    #check if user is logged in again
+    GenServer.call(target_pid,{:log_in})
+    {_,user_state_as_per_server} = GenServer.call(server_pid,{:get_user_status,target_user})
+    assert user_state_as_per_server == 1
+  end
+
 end

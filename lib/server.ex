@@ -34,6 +34,11 @@ defmodule Server do
     {:reply,from,state}
   end
 
+  def handle_call({:get_user_status, user_id}, _from, state) do
+    [{_,record}] = :ets.lookup(:users, user_id)
+    {:reply, record, state}
+  end
+
   def handle_call({:subscribe_to_user, target_user_id, source_user_id}, from , state) do
 
     if (isUserValid(target_user_id) == 1 and isUserValid(source_user_id) == 1) do
@@ -50,6 +55,16 @@ defmodule Server do
 
     end
     {:reply, from, state }
+  end
+
+  def handle_call({:log_in, user_id}, from, state) do
+    log_in(user_id)
+    {:reply, from, state}
+  end
+
+  def handle_call({:log_off, user_id},from, state) do
+    log_off(user_id)
+    {:reply, from, state}
   end
 
   def handle_cast({:post_tweet, username, tweetmsg}, state) do
@@ -112,14 +127,29 @@ defmodule Server do
   end
 
   defp register_user(pid,user_id) do
-    :ets.insert(:users, {user_id, pid})
+    :ets.insert(:users, {user_id, {pid,1}})
     :ets.insert(:following, {user_id, []})
     :ets.insert(:subscription, {user_id, []})
     :ets.insert(:tweets, {user_id, []})
   end
 
   defp delete_user(user_id) do
-    :ets.insert(:users,{user_id,-1})
+    :ets.insert(:users,{user_id,{-1,0}})
+  end
+
+  defp log_off(user_id) do
+    [{_,{pid,_}}] = :ets.lookup(:users,user_id)
+    :ets.insert(:users,{user_id,{pid,0}})
+  end
+
+  defp log_in(user_id) do
+    [{_,{pid,_}}] = :ets.lookup(:users,user_id)
+    :ets.insert(:users,{user_id,{pid,1}})
+  end
+
+  defp is_active(user_id) do
+    [{_,{_,is_active}}] = :ets.lookup(:users,user_id)
+    is_active
   end
 
   defp isUserValid(user_id) do
