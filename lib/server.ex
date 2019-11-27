@@ -10,6 +10,7 @@ defmodule Server do
     :ets.new(:following,[:set, :public, :named_table])
     :ets.new(:subscription,[:set, :public, :named_table])
     :ets.new(:tweets,[:set, :public, :named_table])
+    :ets.new(:reverse_entry,[:set, :public, :named_table])
     {:ok,%{}}
   end
 
@@ -49,6 +50,65 @@ defmodule Server do
 
     end
     {:reply, from, state }
+  end
+
+  def handle_cast({:post_tweet, username, tweetmsg}, state) do
+    user_tweet_entry = :ets.lookup(:tweets, username)
+    tweet_list = elem(Enum.at(user_tweet_entry,0), 1)
+    :ets.insert(:tweets, {username, [tweetmsg | tweet_list]})
+    subscriber_entry = :ets.lookup(:subscription, username)
+    subscriber_list = elem(Enum.at(subscriber_entry,0), 1)
+    Enum.each(subscriber_list, fn subscriber_client ->
+      subscriber_pid_entry = :ets.lookup(:users, subscriber_client)
+      subscriber_pid = elem(Enum.at(subscriber_pid_entry,0), 1)
+      # check if subscriber is connected
+      GenServer.cast(subscriber_pid,{:live_feed, username, tweetmsg})
+    end)
+    IO.puts("#{inspect subscriber_list}")
+    print_tweet = :ets.lookup(:tweets, username)
+    IO.puts("tweets for user #{inspect username} is #{inspect print_tweet}")
+    {:noreply,state}
+  end
+
+  def handle_cast({:add_reverse_entry, key, tweetmsg}, state) do
+    reverse_entry = :ets.lookup(:reverse_entry, key)
+    tweet_list =
+    if reverse_entry == nil or reverse_entry == [] do
+      []
+    else
+      elem(Enum.at(reverse_entry,0), 1)
+    end
+    :ets.insert(:reverse_entry, {key, [tweetmsg | tweet_list]})
+    # if tweet_list == nil or tweet_list == []  do
+    #   :ets.insert(:reverse_entry, {key, [tweetmsg]})
+    # else
+    #   :ets.insert(:reverse_entry, {key, [tweetmsg | tweet_list]})
+    # end
+    {:noreply,state}
+  end
+
+  def handle_call({:query_reverse_Entry, key}, from,state) do
+    reverse_entry = :ets.lookup(:reverse_entry, key)
+    tweet_list = elem(Enum.at(reverse_entry,0), 1)
+    {:reply,from,state}
+  end
+
+  def handle_call({:query_news_feed, username}, from,state) do
+    following_entry = :ets.lookup(:following, username)
+    following_list = elem(Enum.at(following_entry,0), 1)
+    Enum.reduce(following_list, [], fn following_client, acc ->
+      following_tweet_entry = :ets.lookup(:tweets, following_client)
+      following_tweet_list = elem(Enum.at(following_tweet_entry,0), 1)
+      acc =
+      if following_tweet_list == nil or following_tweet_list == [] do
+        acc
+      else
+        [following_tweet_entry | acc]
+      end
+
+    end)
+
+    {:reply,from,state}
   end
 
   defp register_user(pid,user_id) do
