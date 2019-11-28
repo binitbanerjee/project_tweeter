@@ -117,8 +117,8 @@ defmodule Clients do
   end
 
   def handle_call({:query_news_feed}, _from, state) do
-    {:ok, server_pid} =Map.fetch(state, :server_id)
-    {:ok, username} =Map.fetch(state, :id)
+    {:ok, server_pid} = Map.fetch(state, :server_id)
+    {:ok, username} = Map.fetch(state, :id)
     tweet_list = GenServer.call(server_pid,{:query_news_feed, username})
     tweet_list =
       if tweet_list == nil do
@@ -126,6 +126,11 @@ defmodule Clients do
       else
         tweet_list
       end
+    state = %{
+        server_id: server_pid,
+        id: username,
+        news_feed: tweet_list
+      }
     {:reply, tweet_list, state}
   end
 
