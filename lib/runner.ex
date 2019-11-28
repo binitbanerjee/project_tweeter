@@ -1,26 +1,27 @@
 defmodule Runner do
 
-  defp getRandom(self_id, children, pid) do
-    if(pid == self_id or pid == nil) do
-      getRandom(self_id, children, Enum.random())
+  # defp getRandom(self_id, children, pid) do
+  #   if(pid == self_id or pid == nil) do
+  #     getRandom(self_id, children, Enum.random())
+  #   end
+
+  # end
+
+  defp get_random(all, self, count, results) do
+    if(length(results) < count) do
+      random = Enum.random(all)
+      results =
+        if(random!=self) do
+          [random|results]
+        else
+          results
+        end
+      get_random(all, self, count, results)
+      else
+        results
     end
 
   end
-
-  # defp assignsubscribers(clients, server_pid) do
-  #   len = length(clients)
-  #   Enum.each(0..(len-1), fn index ->
-
-  #     {target_id, target_pid} = Enum.at(clients, index)
-
-  #     if index == 1 do
-
-  #     end
-  #     cond do
-  #       index == 1 -> GenServer.call(server_pid, {:subscribe, [Enum.at(clients, 1),]})
-  #     end
-  #   end)
-  # end
 
   def run(argv) do
     start_time = System.system_time(:millisecond)
@@ -35,6 +36,10 @@ defmodule Runner do
       {user_id,pid}
     end)
 
+    client_ids = Enum.map(children, fn {x,_}->
+      x
+    end)
+
     tweet(elem(Enum.at(children, 0),0),elem(Enum.at(children, 0),1),1,1,children)
     Process.sleep(2000)
 
@@ -42,7 +47,7 @@ defmodule Runner do
     IO.puts("Converged in #{(System.system_time(:millisecond) - start_time) / 1000} seconds")
   end
 
-  defp get_hashtag do
+  def get_hashtag do
     hashtags = ["#itIsTrending", "#yayElixir", "#whatsInaHashTag"]
     Enum.random(hashtags)
   end

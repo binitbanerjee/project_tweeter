@@ -85,7 +85,7 @@ defmodule Server do
     {:noreply,state}
   end
 
-  def handle_cast({:add_reverse_entry, key, tweetmsg}, state) do
+  def handle_cast({:add_reverse_entry, username, key, tweetmsg}, state) do
     reverse_entry = :ets.lookup(:reverse_entry, key)
     tweet_list =
     if reverse_entry == nil or reverse_entry == [] do
@@ -94,7 +94,7 @@ defmodule Server do
       elem(Enum.at(reverse_entry,0), 1)
     end
 
-    :ets.insert(:reverse_entry, {key, [tweetmsg | tweet_list]})
+    :ets.insert(:reverse_entry, {key, [{username, tweetmsg} | tweet_list]})
     {:noreply,state}
   end
 

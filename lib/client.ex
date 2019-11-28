@@ -63,16 +63,14 @@ defmodule Clients do
     {:noreply, state}
   end
 
-
-
   def handle_cast({:tweet_post, tweet_msg, hashtag, user_tag}, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     {:ok, username} =Map.fetch(state, :id)
     if hashtag != "" do
-      GenServer.cast(server_pid,{:add_reverse_entry, hashtag, tweet_msg})
+      GenServer.cast(server_pid,{:add_reverse_entry, username, hashtag, tweet_msg})
     end
     if user_tag != "" do
-      GenServer.cast(server_pid,{:add_reverse_entry, user_tag, tweet_msg})
+      GenServer.cast(server_pid,{:add_reverse_entry, username, user_tag, tweet_msg})
     end
     GenServer.cast(server_pid,{:post_tweet, username, tweet_msg})
     {:noreply, state}
