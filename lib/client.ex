@@ -47,7 +47,6 @@ defmodule Clients do
   end
 
   def handle_call({:log_off}, from, state) do
-    IO.puts("may be")
     {:ok, server_pid} = Map.fetch(state,:server_id)
     {:ok, self_id} = Map.fetch(state,:id)
     GenServer.call(server_pid, {:log_off, self_id})
@@ -69,7 +68,6 @@ defmodule Clients do
   def handle_cast({:tweet_post, tweet_msg, hashtag, user_tag}, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     {:ok, username} =Map.fetch(state, :id)
-    # IO.puts(" #{tweet_msg} ")
     if hashtag != "" do
       GenServer.cast(server_pid,{:add_reverse_entry, hashtag, tweet_msg})
     end
@@ -80,7 +78,7 @@ defmodule Clients do
     {:noreply, state}
   end
 
-  def handle_cast({:live_feed, username, tweetmsg}, state) do
+  def handle_cast({:live_feed, tweetmsg}, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     {:ok, username} =Map.fetch(state, :id)
     {:ok, feed} =Map.fetch(state, :news_feed)
@@ -93,7 +91,7 @@ defmodule Clients do
     {:noreply, state}
   end
 
-  def handle_call({:query_hashtag, hashtag}, from, state) do
+  def handle_call({:query_hashtag, hashtag}, _from, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     tweet_list = GenServer.call(server_pid,{:query_reverse_Entry, hashtag})
     tweet_list =
@@ -102,10 +100,10 @@ defmodule Clients do
     else
       tweet_list
     end
-    {:reply, from, state}
+    {:reply, tweet_list, state}
   end
 
-  def handle_call({:query_mentions}, from, state) do
+  def handle_call({:query_mentions}, _from, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     {:ok, username} =Map.fetch(state, :id)
     tweet_list = GenServer.call(server_pid,{:query_reverse_Entry, username})
@@ -115,20 +113,20 @@ defmodule Clients do
     else
       tweet_list
     end
-    {:reply, from, state}
+    {:reply, tweet_list, state}
   end
 
-  def handle_call({:query_news_feed, hashtag}, from, state) do
+  def handle_call({:query_news_feed}, _from, state) do
     {:ok, server_pid} =Map.fetch(state, :server_id)
     {:ok, username} =Map.fetch(state, :id)
-    tweet_list = GenServer.call(server_pid,{:query_reverse_Entry, username})
+    tweet_list = GenServer.call(server_pid,{:query_news_feed, username})
     tweet_list =
       if tweet_list == nil do
         []
       else
         tweet_list
       end
-    {:reply, from, state}
+    {:reply, tweet_list, state}
   end
 
 end
