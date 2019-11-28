@@ -41,7 +41,8 @@ defmodule Runner do
       x
     end)
 
-    Utility.assign_subscribers(children, round(length(children)/10))
+    # Utility.assign_subscribers(children, round(length(children)/10))
+    Utility.assign_subscribers_zipf(children)
 
     Enum.each(1..num_tweets, fn _index->
       Enum.map(children, fn {user_id,user_pid}->
@@ -52,16 +53,6 @@ defmodule Runner do
       spawn(Runner, :simulate_log_off_log_in_for_users, [random_user_id, random_user_pid])
       Process.sleep(1000)
     end)
-
-
-
-
-
-
-    # tweet(elem(Enum.at(children, 0),0),elem(Enum.at(children, 0),1),1,1,children)
-    # Process.sleep(2000)
-
-
     IO.puts("Converged in #{(System.system_time(:millisecond) - start_time) / 1000} seconds")
   end
 
@@ -69,7 +60,7 @@ defmodule Runner do
   def simulate_log_off_log_in_for_users(user_id, user_pid) do
     IO.puts("logging off : #{inspect user_id}")
     GenServer.call(user_pid,{:log_off})
-    Process.sleep(500)
+    Process.sleep(200)
     IO.puts("logging back in : #{inspect user_id}")
     GenServer.call(user_pid,{:log_in})
   end

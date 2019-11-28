@@ -63,6 +63,27 @@ defmodule Utility do
     end)
   end
 
+  def assign_subscribers_zipf(clients) do
+    len = length(clients)
+
+    client_ids = Enum.map(clients, fn {x,_}->
+      x
+    end)
+    #clients = client_ids
+    Enum.each(0..(len-1), fn index ->
+      {target_id,target_pid} = Enum.at(clients, index)
+      num_followers =
+        if index==0 do
+          len-1
+        else
+          round((len-1)/index)
+        end
+      neighbors = get_random(client_ids, target_id, num_followers, [])
+
+      GenServer.call(target_pid, {:subscribe, neighbors})
+    end)
+  end
+
   def get_random_tweet_but_not_my_own(tweets, self_id, match) do
     if match == {} do
       match = Enum.random(tweets)
