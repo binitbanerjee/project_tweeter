@@ -113,12 +113,11 @@ defmodule ClientTest do
     {_twitting_user, twitting_pid} = Enum.at(clients,2)
     tweet_msg1 = "This tweet will break the internet. #itIsTrending"
     tweet_msg2 = "Just another tweet. #nobodyCares"
-    GenServer.cast(twitting_pid,{:tweet_post, tweet_msg1, "#itIsTrending", ""})
+    GenServer.cast(twitting_pid,{:tweet_post, tweet_msg1})
     Process.sleep(1000)
     # client 4 fetches tweetlist with hashtag
     {_querying_user, querying_pid} = Enum.at(clients,4)
     tweet_list = GenServer.call(querying_pid,{:query_hashtag, "#itIsTrending"})
-    IO.puts("#{inspect tweet_list}")
   end
 
   test "test for disconnected feed update" do
@@ -132,15 +131,13 @@ defmodule ClientTest do
 
     #Querry the feed to check for all users
     feed = GenServer.call(target_pid, {:query_news_feed})
-    IO.puts("Initially: #{inspect feed}")
     assert feed == []
     #log off the user with user id @2"
     GenServer.call(target_pid, {:log_off})
 
     #make a tweet by an user that the user @2 is subscribed to"
     GenServer.cast(subscribedto_pid,{:tweet_post,
-                                      msg_of_user_target_is_subscribed_to ,
-                                      "", ""})
+                                      msg_of_user_target_is_subscribed_to})
 
     Process.sleep(500)
     feed = GenServer.call(target_pid, {:query_news_feed})

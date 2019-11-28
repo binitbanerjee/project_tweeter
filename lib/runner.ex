@@ -25,13 +25,14 @@ defmodule Runner do
 
   def run(argv) do
     start_time = System.system_time(:millisecond)
-    [num_client, _num_tweets] = argv
+    [num_client, num_tweets] = argv
     num_client = String.to_integer(num_client)
+    num_tweets = String.to_integer(num_tweets)
 
-    {:ok,server_id} = Server.start_link()
+    {:ok,server_pid} = Server.start_link()
     children = Enum.map(1..num_client, fn x ->
       user_id =Enum.join(["@",Integer.to_string(x)])
-      args = [user_id,server_id]
+      args = [user_id,server_pid]
       {:ok,pid} = Clients.start_link(args)
       {user_id,pid}
     end)
@@ -40,45 +41,41 @@ defmodule Runner do
       x
     end)
 
-    tweet(elem(Enum.at(children, 0),0),elem(Enum.at(children, 0),1),1,1,children)
-    Process.sleep(2000)
+    Utility.assign_subscribers(children, round(length(children)/10))
+
+    Enum.each(1..num_tweets, fn _index->
+      Enum.map(children, fn {user_id,user_pid}->
+        {tweet_msg} = Utility.get_random_tweet(client_ids,user_id)
+        GenServer.cast(user_pid,{:tweet_post, tweet_msg})
+      end)
+      {random_user_id, random_user_pid} = Enum.random(children)
+      spawn(Runner, :simulate_log_off_log_in_for_users, [random_user_id, random_user_pid])
+      Process.sleep(1000)
+    end)
+
+
+
+
+
+
+    # tweet(elem(Enum.at(children, 0),0),elem(Enum.at(children, 0),1),1,1,children)
+    # Process.sleep(2000)
 
 
     IO.puts("Converged in #{(System.system_time(:millisecond) - start_time) / 1000} seconds")
+  end
+
+  #This simulates the scenario where the user logs off and then logs in after 500ms.
+  def simulate_log_off_log_in_for_users(user_id, user_pid) do
+    IO.puts("logging off : #{inspect user_id}")
+    GenServer.call(user_pid,{:log_off})
+    Process.sleep(500)
+    IO.puts("logging back in : #{inspect user_id}")
+    GenServer.call(user_pid,{:log_in})
   end
 
   def get_hashtag do
     hashtags = ["#itIsTrending", "#yayElixir", "#whatsInaHashTag"]
     Enum.random(hashtags)
   end
-
-  def tweet(username,user_pid,use_hashtag,use_user_tag, children) do
-    tweet_msg = "This is a tweet post."
-    hashtag =
-    if use_hashtag == 1 do
-      get_hashtag()
-    else
-      ""
-    end
-    user_tag =
-    if use_user_tag == 1 do
-      get_user(children, username)
-    else
-      ""
-    end
-    tweet_msg = tweet_msg <> " " <> hashtag <> " " <> user_tag
-    GenServer.cast(user_pid,{:tweet_post, tweet_msg, hashtag, user_tag})
-  end
-
-  defp get_user(children, self_username) do
-    child = Enum.random(children)
-    user = elem(child, 0)
-    user =
-    if user == self_username do
-      get_user(children, self_username)
-    else
-      user
-    end
-  end
-
 end

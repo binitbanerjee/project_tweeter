@@ -68,6 +68,7 @@ defmodule Server do
   end
 
   def handle_cast({:post_tweet, username, tweetmsg}, state) do
+
     user_tweet_entry = :ets.lookup(:tweets, username)
     tweet_list = elem(Enum.at(user_tweet_entry,0), 1)
     :ets.insert(:tweets, {username, [tweetmsg | tweet_list]})
